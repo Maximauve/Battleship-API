@@ -16,7 +16,9 @@ export class RoomService {
     const newUser: UserWithShip = {
       ...host,
       hasToPlay: false,
-      ships: [],
+      playerBoats: [],
+      battlePlace: [],
+      shipsIndexes: {},
     };
     const room: RoomModel = {
       slug: await this.pirateGlossaryService.GetThreeWord(),
