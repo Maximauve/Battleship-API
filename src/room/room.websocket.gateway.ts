@@ -104,10 +104,10 @@ export class RoomWebsocketGateway
     });
   }
 
-  async handleAction(slug: string, callback: () => void): Promise<unknown> {
+  async handleAction(slug: string, callback: Function): Promise<unknown> {
     try {
       if (await this.redisService.exists(`room:${slug}`)) {
-        return callback();
+        return await callback();
       } else {
         throw new Error("La room n'existe pas");
       }
