@@ -1,8 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Param, Post } from "@nestjs/common";
 import { RoomService } from "../service/room.service";
 import { UseGuards, UsePipes } from "@nestjs/common/decorators";
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
-import { CreatedRoomDto } from "../dto/room.dto";
 import { ValidationPipe } from "@nestjs/common/pipes";
 import { HttpException } from "@nestjs/common/exceptions";
 import { SimpleUser } from "../room.model";
@@ -14,13 +13,13 @@ export class RoomController {
   @UseGuards(JwtAuthGuard)
   @UsePipes(ValidationPipe)
   @Post("")
-  async createRoom(@Body() host: SimpleUser): Promise<{}> {
+  async createRoom(@Body() host: SimpleUser): Promise<unknown> {
     return await this.roomService.createRoom(host);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete("/:slug/close")
-  async closeRoom(@Param("slug") slug: string): Promise<{}> {
+  async closeRoom(@Param("slug") slug: string): Promise<unknown> {
     try {
       return await this.roomService.closeRoom(slug);
     } catch (e) {

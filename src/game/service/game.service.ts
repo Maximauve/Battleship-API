@@ -26,14 +26,14 @@ export class GameService {
     await this.redisService.hset(`room:${slug}`, ['status', room.status, 'users', JSON.stringify(room.users)]);
   }
 
-  async placeShips(slug: string, user: User, playerBoats: string[][]): Promise<void> {
+  async placeShips(slug: string, user: User, playerBoats: string[][]): Promise<UserWithShip[]> {
     const room: RoomModel = await this.roomService.getRoom(slug);
     if (room.status != GameStatus.PLACE_SHIPS) throw new Error("La partie n'est pas en cours");
     const shipsIndexes = {};
     for (let y = 0; y < playerBoats.length; y++) {
       for (let x = 0; x < playerBoats[y].length; x++) {
         const shipNumber = playerBoats[y][x];
-        if (shipNumber !== null) {
+        if (shipNumber !== 'E') {
           if (!shipsIndexes[shipNumber]) {
             shipsIndexes[shipNumber] = [];
           }
@@ -43,10 +43,11 @@ export class GameService {
     }
     if (!await this.checkPlaceShips(shipsIndexes)) throw new Error("Vous n'avez pas placé tous vos bateaux");
     room.users.find((element: UserWithShip) => element.userId == user.userId).playerBoats = playerBoats;
-    room.users.find((element: UserWithShip) => element.userId == user.userId).battlePlace = Array(10).fill(Array(10).fill(null));
+    room.users.find((element: UserWithShip) => element.userId == user.userId).battlePlace = Array(10).fill(Array(10).fill('E'));
     room.users.find((element: UserWithShip) => element.userId == user.userId).hasToPlay = false;
     room.users.find((element: UserWithShip) => element.userId == user.userId).shipsIndexes = shipsIndexes;
     await this.redisService.hset(`room:${slug}`, ['users', JSON.stringify(room.users)]);
+		return room.users;
   }
 
   async checkPlaceShips(shipsIndexes: { [key: string]: { x: number, y: number }[] }): Promise<boolean> {
@@ -66,7 +67,7 @@ export class GameService {
     await this.redisService.hset(`room:${slug}`, ['status', room.status]);
   }
 
-  async shoot(slug: string, user: UserWithShip, shoot: Shoot) {
+  async shoot(slug: string, user: UserWithShip, shoot: Shoot): Promise<UserWithShip[]> {
     const room: RoomModel = await this.roomService.getRoom(slug);
     if (room.status != GameStatus.PLAY) throw new Error("La partie n'est pas en cours");
     const userToShoot: UserWithShip = room.users.find((element: UserWithShip) => element.userId != user.userId);
@@ -81,6 +82,7 @@ export class GameService {
       userToShoot.hasToPlay = true;
     }
     await this.redisService.hset(`room:${slug}`, ['users', JSON.stringify(room.users)]);
+		return room.users;
   }
 
   replaceShipDestroy(userToShoot: UserWithShip, user: UserWithShip, shipNumber: string) {

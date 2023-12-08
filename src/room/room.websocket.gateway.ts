@@ -81,7 +81,11 @@ export class RoomWebsocketGateway
   @SubscribeMessage("placeShips")
   async placeShips(@ConnectedSocket() client: Socket, @MessageBody() ships: string[][]): Promise<unknown> {
     return this.handleAction(client.data.slug, async () => {
-      await this.gameService.placeShips(client.data.slug, client.data.user, ships);
+      const users = await this.gameService.placeShips(client.data.slug, client.data.user, ships);
+			for (const user of users) {
+				await this.server.to(user.socketId).emit("placeShips", user.playerBoats);
+				await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
+			}
       await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
       if (await this.gameService.checkPlaceShips(client.data.slug)) {
         await this.gameService.startBattle(client.data.slug);
@@ -93,7 +97,10 @@ export class RoomWebsocketGateway
   @SubscribeMessage('shoot')
   async shoot(@ConnectedSocket() client: Socket, @MessageBody() shoot: Shoot): Promise<unknown> {
     return this.handleAction(client.data.slug, async () => {
-      await this.gameService.shoot(client.data.slug, client.data.user, shoot);
+      const users = await this.gameService.shoot(client.data.slug, client.data.user, shoot);
+			for (const user of users) {
+				await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
+			}
       await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
       if (await this.gameService.checkEndGame(client.data.slug)) {
         const user: UserWithShip = await this.gameService.endGame(client.data.slug);
