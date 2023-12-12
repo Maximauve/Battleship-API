@@ -70,6 +70,7 @@ export class RoomService {
         room.users.find((element: User) => element.userId == user.userId).socketId = user.socketId;
         await this.redisService.hset(`room:${slug}`, ["users", JSON.stringify(room.users),]);
       } else {
+        user.isHost = false;
         await this.redisService.hset(`room:${slug}`, ["users", JSON.stringify([...room.users, user]), "currentPlayers", (room.currentPlayers + 1).toString()]);
       }
     } else {

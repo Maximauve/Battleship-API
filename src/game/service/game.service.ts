@@ -26,38 +26,26 @@ export class GameService {
     await this.redisService.hset(`room:${slug}`, ['status', room.status, 'users', JSON.stringify(room.users)]);
   }
 
-  async placeShips(slug: string, user: User, playerBoats: string[][]): Promise<UserWithShip[]> {
+  async placeShips(slug: string, user: User, shipsIndexes: { [key: string]: { x: number, y: number }[] }): Promise<UserWithShip[]> {
     const room: RoomModel = await this.roomService.getRoom(slug);
     if (room.status != GameStatus.PLACE_SHIPS) throw new Error("La partie n'est pas en cours");
-    const shipsIndexes = {};
-    for (let y = 0; y < playerBoats.length; y++) {
-      for (let x = 0; x < playerBoats[y].length; x++) {
-        const shipNumber = playerBoats[y][x];
-        if (shipNumber !== 'E') {
-          if (!shipsIndexes[shipNumber]) {
-            shipsIndexes[shipNumber] = [];
-          }
-          shipsIndexes[shipNumber].push({ x, y });
-        }
-      }
-    }
     if (!await this.checkPlaceShips(shipsIndexes)) throw new Error("Vous n'avez pas placé tous vos bateaux");
-    room.users.find((element: UserWithShip) => element.userId == user.userId).playerBoats = playerBoats;
+    room.users.find((element: UserWithShip) => element.userId == user.userId).playerBoats = this.convertIndexesToPlayerBoats(shipsIndexes);
     room.users.find((element: UserWithShip) => element.userId == user.userId).battlePlace = Array(10).fill(Array(10).fill('E'));
     room.users.find((element: UserWithShip) => element.userId == user.userId).hasToPlay = false;
     room.users.find((element: UserWithShip) => element.userId == user.userId).shipsIndexes = shipsIndexes;
     await this.redisService.hset(`room:${slug}`, ['users', JSON.stringify(room.users)]);
-		return room.users;
+	return room.users;
   }
 
   async checkPlaceShips(shipsIndexes: { [key: string]: { x: number, y: number }[] }): Promise<boolean> {
+    console.log(shipsIndexes)
     if (Object.keys(shipsIndexes).length != 5) return false;
     return shipsIndexes['5'].length == 2 &&
-      shipsIndexes['1'].length == 5 &&
-      shipsIndexes['4'].length != 3 &&
-      shipsIndexes['3'].length != 3 &&
-      shipsIndexes['2'].length != 4 &&
-      shipsIndexes['1'].length != 5;
+      shipsIndexes['4'].length == 3 &&
+      shipsIndexes['3'].length == 3 &&
+      shipsIndexes['2'].length == 4 &&
+      shipsIndexes['1'].length == 5;
   }
 
   async startBattle(slug: string): Promise<void> {
@@ -112,6 +100,22 @@ export class GameService {
     const user = room.users.find((user: UserWithShip) => user.battlePlace.every((line) => line.every((cell) => cell == 'D')))
     await this.redisService.hset(`room:${slug}`, ['status', room.status]);
     return user;
+  }
+
+  async checkAllPlacedShips(slug: string): Promise<boolean> {
+    const room: RoomModel = await this.roomService.getRoom(slug);
+    if (room.status != GameStatus.PLACE_SHIPS) throw new Error("La partie n'est pas en cours");
+    return room.users.every((user: UserWithShip) => !user.hasToPlay);
+  }
+
+  convertIndexesToPlayerBoats(shipsIndexes: { [key: string]: { x: number, y: number }[] }): string[][] {
+    const playerBoats: string[][] = Array(10).fill(Array(10).fill('E'));
+      Object.keys(shipsIndexes).forEach((shipNumber) => {
+      shipsIndexes[shipNumber].forEach((position) => {
+        playerBoats[position.y][position.x] = shipNumber;
+      })
+    })
+    return playerBoats;
   }
 
   // TODO: add stats in future with HUB
