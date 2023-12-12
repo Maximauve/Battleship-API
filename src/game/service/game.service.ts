@@ -31,7 +31,7 @@ export class GameService {
     if (room.status != GameStatus.PLACE_SHIPS) throw new Error("La partie n'est pas en cours");
     if (!await this.checkPlaceShips(shipsIndexes)) throw new Error("Vous n'avez pas placé tous vos bateaux");
     room.users.find((element: UserWithShip) => element.userId == user.userId).playerBoats = this.convertIndexesToPlayerBoats(shipsIndexes);
-    room.users.find((element: UserWithShip) => element.userId == user.userId).battlePlace = Array(10).fill(Array(10).fill('E'));
+    room.users.find((element: UserWithShip) => element.userId == user.userId).battlePlace = Array(10).fill(null).map(() => Array(10).fill('E'));
     room.users.find((element: UserWithShip) => element.userId == user.userId).hasToPlay = false;
     room.users.find((element: UserWithShip) => element.userId == user.userId).shipsIndexes = shipsIndexes;
     await this.redisService.hset(`room:${slug}`, ['users', JSON.stringify(room.users)]);
@@ -39,7 +39,6 @@ export class GameService {
   }
 
   async checkPlaceShips(shipsIndexes: { [key: string]: { x: number, y: number }[] }): Promise<boolean> {
-    console.log(shipsIndexes)
     if (Object.keys(shipsIndexes).length != 5) return false;
     return shipsIndexes['5'].length == 2 &&
       shipsIndexes['4'].length == 3 &&
@@ -55,16 +54,21 @@ export class GameService {
     await this.redisService.hset(`room:${slug}`, ['status', room.status]);
   }
 
-  async shoot(slug: string, user: UserWithShip, shoot: Shoot): Promise<UserWithShip[]> {
+  async shoot(slug: string, simpleUser: UserWithShip, shoot: Shoot): Promise<UserWithShip[]> {
     const room: RoomModel = await this.roomService.getRoom(slug);
     if (room.status != GameStatus.PLAY) throw new Error("La partie n'est pas en cours");
+    let user: UserWithShip = room.users.find((element: UserWithShip) => element.userId == simpleUser.userId);
     const userToShoot: UserWithShip = room.users.find((element: UserWithShip) => element.userId != user.userId);
-    if (user.battlePlace[shoot.y][shoot.x] != null) throw new Error("Vous avez déjà tiré ici");
-    if (userToShoot.playerBoats[shoot.y][shoot.x] != null) {
+    if (!user.hasToPlay) throw new Error("Ce n'est pas à votre tour de jouer");
+    if (user.battlePlace[shoot.y][shoot.x] != 'E') throw new Error("Vous avez déjà tiré ici");
+    console.log(userToShoot.playerBoats)
+    if (userToShoot.playerBoats[shoot.y][shoot.x] != 'E') {
+      console.log("2")
       const shipNumber: string = userToShoot.playerBoats[shoot.y][shoot.x];
       user.battlePlace[shoot.y][shoot.x] = 'H';
       user = this.replaceShipDestroy(userToShoot, user, shipNumber)
     } else {
+      console.log("3")
       user.battlePlace[shoot.y][shoot.x] = 'M';
       user.hasToPlay = false;
       userToShoot.hasToPlay = true;
@@ -90,14 +94,14 @@ export class GameService {
   async checkEndGame(slug: string): Promise<boolean> {
     const room: RoomModel = await this.roomService.getRoom(slug);
     if (room.status != GameStatus.PLAY) throw new Error("La partie n'est pas en cours");
-    return room.users.some((user: UserWithShip) => user.battlePlace.every((line) => line.every((cell) => cell == 'D')));
+    return room.users.some((user: UserWithShip) => this.checkWin(room, user));
   }
 
   async endGame(slug: string): Promise<UserWithShip> {
     const room: RoomModel = await this.roomService.getRoom(slug);
     if (room.status != GameStatus.PLAY) throw new Error("La partie n'est pas en cours");
     room.status = GameStatus.ENDED;
-    const user = room.users.find((user: UserWithShip) => user.battlePlace.every((line) => line.every((cell) => cell == 'D')))
+    const user: UserWithShip = room.users.find((user: UserWithShip) => this.checkWin(room, user))
     await this.redisService.hset(`room:${slug}`, ['status', room.status]);
     return user;
   }
@@ -109,13 +113,33 @@ export class GameService {
   }
 
   convertIndexesToPlayerBoats(shipsIndexes: { [key: string]: { x: number, y: number }[] }): string[][] {
-    const playerBoats: string[][] = Array(10).fill(Array(10).fill('E'));
-      Object.keys(shipsIndexes).forEach((shipNumber) => {
-      shipsIndexes[shipNumber].forEach((position) => {
-        playerBoats[position.y][position.x] = shipNumber;
-      })
-    })
+    const playerBoats: string[][] = Array(10).fill(null).map(() => Array(10).fill('E'));
+    for (const shipNumber in shipsIndexes) {
+        for (const position of shipsIndexes[shipNumber]) {
+            playerBoats[position.y][position.x] = shipNumber;
+        }
+    }
     return playerBoats;
+  }
+
+  async chooseWhoStart(slug: string): Promise<void> {
+    const room: RoomModel = await this.roomService.getRoom(slug);
+    if (room.status != GameStatus.PLACE_SHIPS) throw new Error("La partie n'est pas en cours");
+    const userToStart: UserWithShip = room.users[Math.floor(Math.random() * room.users.length)];
+    userToStart.hasToPlay = true;
+    await this.redisService.hset(`room:${slug}`, ['users', JSON.stringify(room.users)]);
+  }
+
+  checkWin(room: RoomModel, user: UserWithShip): boolean {
+    const userOpponent: UserWithShip = room.users.find((element: UserWithShip) => element.userId != user.userId);
+    for (const shipNumber in userOpponent.shipsIndexes) {
+      for (const position of userOpponent.shipsIndexes[shipNumber]) {
+        if (user.battlePlace[position.y][position.x] != 'D') {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   // TODO: add stats in future with HUB
