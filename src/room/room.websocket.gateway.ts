@@ -60,8 +60,13 @@ export class RoomWebsocketGateway
     return this.handleAction(client.data.slug, async () => {
       await this.roomService.addUserToRoom(client.data.slug, client.data.user);
       client.join(client.data.slug);
+      const users: UserWithShip[] = await this.roomService.getUsers(client.data.slug);
+      for (const user of users) {
+            await this.server.to(user.socketId).emit("placeShips", user.playerBoats);
+            await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
+      }
       await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
-      await this.server.to(client.data.slug).emit("gameStatus", await this.roomService.getGameStatus(client.data.slug));
+      return { gameStatus: await this.gameService.getGameStatus(client.data.slug) };
     });
   }
 

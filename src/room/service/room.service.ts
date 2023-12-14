@@ -129,4 +129,9 @@ export class RoomService {
     const room: RoomModel = await this.getRoom(slug);
     return room.status;
   }
+
+  async getUsers(slug: string): Promise<UserWithShip[]> {
+    const room: RoomModel = await this.getRoom(slug);
+    return room.users;
+  }
 }

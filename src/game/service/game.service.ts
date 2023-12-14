@@ -61,14 +61,11 @@ export class GameService {
     const userToShoot: UserWithShip = room.users.find((element: UserWithShip) => element.userId != user.userId);
     if (!user.hasToPlay) throw new Error("Ce n'est pas à votre tour de jouer");
     if (user.battlePlace[shoot.y][shoot.x] != 'E') throw new Error("Vous avez déjà tiré ici");
-    console.log(userToShoot.playerBoats)
     if (userToShoot.playerBoats[shoot.y][shoot.x] != 'E') {
-      console.log("2")
       const shipNumber: string = userToShoot.playerBoats[shoot.y][shoot.x];
       user.battlePlace[shoot.y][shoot.x] = 'H';
       user = this.replaceShipDestroy(userToShoot, user, shipNumber)
     } else {
-      console.log("3")
       user.battlePlace[shoot.y][shoot.x] = 'M';
       user.hasToPlay = false;
       userToShoot.hasToPlay = true;
@@ -140,6 +137,11 @@ export class GameService {
       }
     }
     return true;
+  }
+
+  async getGameStatus(slug: string): Promise<GameStatus> {
+    const room: RoomModel = await this.roomService.getRoom(slug);
+    return room.status;
   }
 
   // TODO: add stats in future with HUB
