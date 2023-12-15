@@ -62,7 +62,7 @@ export class RoomWebsocketGateway
       client.join(client.data.slug);
       const users: UserWithShip[] = await this.roomService.getUsers(client.data.slug);
       for (const user of users) {
-            await this.server.to(user.socketId).emit("placeShips", user.playerBoats);
+            await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
             await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
       }
       await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
@@ -92,7 +92,7 @@ export class RoomWebsocketGateway
       if (await this.gameService.checkAllPlacedShips(client.data.slug)) {
         await this.gameService.chooseWhoStart(client.data.slug);
         for (const user of users) {
-            await this.server.to(user.socketId).emit("placeShips", user.playerBoats);
+            await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
             await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
         }
         await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
@@ -108,6 +108,7 @@ export class RoomWebsocketGateway
       const users = await this.gameService.shoot(client.data.slug, client.data.user, shoot);
       for (const user of users) {
           await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
+          await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
       }
       await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
       if (await this.gameService.checkEndGame(client.data.slug)) {

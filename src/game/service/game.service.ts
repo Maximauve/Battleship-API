@@ -57,21 +57,23 @@ export class GameService {
   async shoot(slug: string, simpleUser: UserWithShip, shoot: Shoot): Promise<UserWithShip[]> {
     const room: RoomModel = await this.roomService.getRoom(slug);
     if (room.status != GameStatus.PLAY) throw new Error("La partie n'est pas en cours");
-    let user: UserWithShip = room.users.find((element: UserWithShip) => element.userId == simpleUser.userId);
+    const user: UserWithShip = room.users.find((element: UserWithShip) => element.userId == simpleUser.userId);
     const userToShoot: UserWithShip = room.users.find((element: UserWithShip) => element.userId != user.userId);
     if (!user.hasToPlay) throw new Error("Ce n'est pas à votre tour de jouer");
     if (user.battlePlace[shoot.y][shoot.x] != 'E') throw new Error("Vous avez déjà tiré ici");
     if (userToShoot.playerBoats[shoot.y][shoot.x] != 'E') {
       const shipNumber: string = userToShoot.playerBoats[shoot.y][shoot.x];
       user.battlePlace[shoot.y][shoot.x] = 'H';
-      user = this.replaceShipDestroy(userToShoot, user, shipNumber)
+      userToShoot.playerBoats[shoot.y][shoot.x] = 'H';
+      this.replaceShipDestroy(userToShoot, user, shipNumber)
     } else {
       user.battlePlace[shoot.y][shoot.x] = 'M';
+      userToShoot.playerBoats[shoot.y][shoot.x] = 'M';
       user.hasToPlay = false;
       userToShoot.hasToPlay = true;
     }
     await this.redisService.hset(`room:${slug}`, ['users', JSON.stringify(room.users)]);
-		return room.users;
+	return room.users;
   }
 
   replaceShipDestroy(userToShoot: UserWithShip, user: UserWithShip, shipNumber: string) {
@@ -84,8 +86,13 @@ export class GameService {
         }
         return cell;
       }));
+      userToShoot.playerBoats = userToShoot.playerBoats.map((line, y) => line.map((cell, x) => {
+        if (ships.some((position) => position.x == x && position.y == y)) {
+          return 'D';
+        }
+        return cell;
+      }));
     }
-    return user;
   }
 
   async checkEndGame(slug: string): Promise<boolean> {
