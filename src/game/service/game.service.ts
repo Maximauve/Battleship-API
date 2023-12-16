@@ -20,8 +20,10 @@ export class GameService {
     if (room.currentPlayers < 2) throw new Error("Il n'y a pas assez de joueurs");
     if (room.status != GameStatus.UNSTARTED) throw new Error("La partie à déjà commencé");
     room.status = GameStatus.PLACE_SHIPS;
-    room.users.forEach((user: User) => {
+    room.users.forEach((user: UserWithShip) => {
       user.hasToPlay = true;
+      user.battlePlace = Array(10).fill(null).map(() => Array(10).fill('E'));
+      user.playerBoats = Array(10).fill(null).map(() => Array(10).fill('E'));
     });
     await this.redisService.hset(`room:${slug}`, ['status', room.status, 'users', JSON.stringify(room.users)]);
   }
