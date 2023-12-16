@@ -5,7 +5,7 @@ import { User } from "../users.entity";
 import { CreatedUserDto } from "../dto/users.dto";
 import { HttpException } from "@nestjs/common/exceptions";
 import { UpdatedUsersDto } from "../dto/usersUpdate.dto";
-import { FriendRequest } from "src/friend-request/friend-request.entity";
+import { CreateFriendDTO } from "src/friend-request/dto/create-friend.dto";
 
 @Injectable()
 export class UsersService {
@@ -109,7 +109,17 @@ export class UsersService {
   }
 
 
-  async AddFriend(fr: FriendRequest) {
-    const query = await this.usersRepository.update(fr.receiver)
+  async AddFriend(fr: CreateFriendDTO) {
+    const { sender, receiver } = fr;
+    await this.usersRepository
+      .createQueryBuilder()
+      .relation(User, "friends")
+      .of(sender)
+      .add(receiver);
+    await this.usersRepository
+      .createQueryBuilder()
+      .relation(User, "friends")
+      .of(receiver)
+      .add(sender);
   }
 }

@@ -4,6 +4,7 @@ import { Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "src/users/users.entity";
 import { UsersService } from "src/users/services/users.service";
+import { CreateFriendDTO } from "../dto/create-friend.dto";
 
 @Injectable()
 export class FriendRequestService {
@@ -17,6 +18,8 @@ export class FriendRequestService {
     return await this.friendRequestRepository
       .createQueryBuilder("friendRequest")
       .where("friendRequest.id = :id", { id: id })
+      .leftJoinAndSelect("friendRequest.receiver", "receiver")
+      .leftJoinAndSelect("friendRequest.sender", "sender")
       .getOne();
   }
 
@@ -49,6 +52,8 @@ export class FriendRequestService {
   async CheckIfReverseRequestIsPending(sender: User, receiver: User) {
     const friendRequest = await this.friendRequestRepository
       .createQueryBuilder("friendRequest")
+      .leftJoinAndSelect("friendRequest.receiver", "receiver")
+      .leftJoinAndSelect("friendRequest.sender", "sender")
       .where("friendRequest.sender = :sender", { sender: receiver.id })
       .andWhere("friendRequest.receiver = :receiver", { receiver: sender.id })
       .getOne();
@@ -59,7 +64,13 @@ export class FriendRequestService {
   }
 
   async AcceptFriendRequest(fr: FriendRequest) {
-    this.userService.AddFriend(fr);
+    const sender = await this.userService.FindOneId(fr.sender.id);
+    const receiver = await this.userService.FindOneId(fr.receiver.id);
+    const friends: CreateFriendDTO = {
+      sender: sender.id,
+      receiver: receiver.id,
+    };
+    this.userService.AddFriend(friends);
 
     return this.friendRequestRepository
       .createQueryBuilder()

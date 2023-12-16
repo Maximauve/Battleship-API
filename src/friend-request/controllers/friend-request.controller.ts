@@ -51,6 +51,7 @@ export class FriendRequestController {
     if (!fr) {
       throw new Error("Friend request not found");
     }
+    console.log(fr);
     return this.friendRequestService.AcceptFriendRequest(fr);
   }
 
