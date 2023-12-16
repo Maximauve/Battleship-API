@@ -5,13 +5,14 @@ import { User } from "../users.entity";
 import { CreatedUserDto } from "../dto/users.dto";
 import { HttpException } from "@nestjs/common/exceptions";
 import { UpdatedUsersDto } from "../dto/usersUpdate.dto";
+import { FriendRequest } from "src/friend-request/friend-request.entity";
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async GetAll(): Promise<User[]> {
     return await this.usersRepository.find();
@@ -77,5 +78,38 @@ export class UsersService {
     if (query.affected == 0)
       throw new HttpException("L'utilisateur n'existe pas", 404);
     return {};
+  }
+
+  async GetFriends(userId: string): Promise<User[]> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: {
+        friends: true
+      }
+    });
+    if (!user) throw new HttpException("L'utilisateur n'existe pas", 404);
+    console.log(user);
+    return user.friends;
+  }
+
+  async CheckIfAlreadyFriend(sender: User, receiver: User) {
+    const friendRequest = await this.usersRepository.findOne({
+      where: [
+        { friends: { id: sender.id } },
+        { friends: { id: receiver.id } }
+      ],
+      relations: {
+        friends: true
+      }
+    })
+    if (friendRequest == null) {
+      return false;
+    }
+    return true;
+  }
+
+
+  async AddFriend(fr: FriendRequest) {
+    const query = await this.usersRepository.update(fr.receiver)
   }
 }

@@ -11,6 +11,8 @@ import { AuthExceptionFilter } from "./auth/exception-filter/exception-filter";
 import { GameModule } from "./game/game.module";
 import { WordsGlossaryModule } from "./words-glossary/words-glossary.module";
 import { WordGlossary } from "./words-glossary/words-glossary.entity";
+import { FriendRequestModule } from "./friend-request/friend-request.module";
+import { FriendRequest } from "./friend-request/friend-request.entity";
 
 @Module({
   imports: [
@@ -27,7 +29,7 @@ import { WordGlossary } from "./words-glossary/words-glossary.entity";
         username: configService.get("POSTGRES_USER"),
         password: configService.get("POSTGRES_PASSWORD"),
         database: configService.get("POSTGRES_DATABASE"),
-        entities: [User, WordGlossary],
+        entities: [FriendRequest, User, WordGlossary],
         synchronize: true,
         extra: {
           ssl: configService.get("POSTGRES_SSL") === "true",
@@ -35,6 +37,7 @@ import { WordGlossary } from "./words-glossary/words-glossary.entity";
       }),
       inject: [ConfigService],
     } as TypeOrmModuleAsyncOptions),
+    FriendRequestModule,
     UsersModule,
     RedisModule,
     WordsGlossaryModule,
@@ -50,4 +53,4 @@ import { WordGlossary } from "./words-glossary/words-glossary.entity";
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

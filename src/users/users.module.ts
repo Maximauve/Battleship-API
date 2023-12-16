@@ -6,10 +6,12 @@ import { UsersService } from "./services/users.service";
 import { User } from "./users.entity";
 import { forwardRef } from "@nestjs/common/utils";
 import { RedisModule } from "../redis/redis.module";
+import { FriendRequestModule } from "src/friend-request/friend-request.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
+    forwardRef(() => FriendRequestModule),
     forwardRef(() => AuthModule),
     forwardRef(() => RedisModule),
   ],
@@ -17,4 +19,4 @@ import { RedisModule } from "../redis/redis.module";
   providers: [UsersService],
   exports: [UsersService],
 })
-export class UsersModule {}
+export class UsersModule { }
