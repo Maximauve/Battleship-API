@@ -13,6 +13,8 @@ import { WordsGlossaryModule } from "./words-glossary/words-glossary.module";
 import { WordGlossary } from "./words-glossary/words-glossary.entity";
 import { FriendRequestModule } from "./friend-request/friend-request.module";
 import { FriendRequest } from "./friend-request/friend-request.entity";
+import { MessageModule } from './message/message.module';
+import {Message} from "./message/message.entity";
 
 @Module({
   imports: [
@@ -29,7 +31,7 @@ import { FriendRequest } from "./friend-request/friend-request.entity";
         username: configService.get("POSTGRES_USER"),
         password: configService.get("POSTGRES_PASSWORD"),
         database: configService.get("POSTGRES_DATABASE"),
-        entities: [FriendRequest, User, WordGlossary],
+        entities: [FriendRequest, User, WordGlossary, Message],
         synchronize: true,
         extra: {
           ssl: configService.get("POSTGRES_SSL") === "true",
@@ -43,6 +45,7 @@ import { FriendRequest } from "./friend-request/friend-request.entity";
     WordsGlossaryModule,
     RoomModule,
     GameModule,
+    MessageModule,
   ],
   controllers: [],
   providers: [

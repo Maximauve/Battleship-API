@@ -7,6 +7,7 @@ import { User } from "./users.entity";
 import { forwardRef } from "@nestjs/common/utils";
 import { RedisModule } from "../redis/redis.module";
 import { FriendRequestModule } from "src/friend-request/friend-request.module";
+import {MessageModule} from "../message/message.module";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { FriendRequestModule } from "src/friend-request/friend-request.module";
     forwardRef(() => FriendRequestModule),
     forwardRef(() => AuthModule),
     forwardRef(() => RedisModule),
+    forwardRef(() => MessageModule),
   ],
   controllers: [UsersController],
   providers: [UsersService],

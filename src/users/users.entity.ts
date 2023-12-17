@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { Role } from "./role.enum";
 import { FriendRequest } from "src/friend-request/friend-request.entity";
+import {Message} from "../message/message.entity";
 
 @Entity()
 export class User {
@@ -36,6 +37,12 @@ export class User {
 
   @OneToMany(() => FriendRequest, (fr) => fr.receiver)
   friendRequests: FriendRequest[];
+
+  @OneToMany(() => Message, (message) => message.sender)
+  messageSends: Message[];
+
+  @OneToMany(() => Message, (message) => message.receiver)
+  messagesReceived: Message[];
 
   @CreateDateColumn()
   creation_date: Date;
