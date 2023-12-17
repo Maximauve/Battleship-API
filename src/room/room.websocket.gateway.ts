@@ -64,6 +64,7 @@ export class RoomWebsocketGateway
       for (const user of users) {
           await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
           await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
+          await this.server.to(user.socketId).emit("shipsIndexes", user.shipsIndexes);
       }
       await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
       return { gameStatus: await this.gameService.getGameStatus(client.data.slug) };
