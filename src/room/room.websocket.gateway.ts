@@ -106,7 +106,7 @@ export class RoomWebsocketGateway
   @SubscribeMessage('shoot')
   async shoot(@ConnectedSocket() client: Socket, @MessageBody() shoot: Shoot): Promise<unknown> {
     return this.handleAction(client.data.slug, async () => {
-      const users = await this.gameService.shoot(client.data.slug, client.data.user, shoot);
+      const [users, state] = await this.gameService.shoot(client.data.slug, client.data.user, shoot);
       for (const user of users) {
           await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
           await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
@@ -122,6 +122,7 @@ export class RoomWebsocketGateway
             await this.server.to(user.socketId).emit("opponentBoats", await this.gameService.getOpponentBoats(client.data.slug, user));
         }
       }
+      return state;
     });
   }
 
