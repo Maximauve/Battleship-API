@@ -13,7 +13,7 @@ import { RoomService } from "./service/room.service";
 import { Message } from "./dto/room.dto";
 import { jwtDecode } from "jwt-decode";
 import { GameService } from "../game/service/game.service";
-import {Shoot, UserWithShip} from "./room.model";
+import {GameStatus, Shoot, UserWithShip} from "./room.model";
 
 @WebSocketGateway({ cors: "*", namespace: "room" })
 export class RoomWebsocketGateway
@@ -64,7 +64,9 @@ export class RoomWebsocketGateway
       for (const user of users) {
           await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
           await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
-          await this.server.to(user.socketId).emit("shipsIndexes", user.shipsIndexes);
+          if (await this.gameService.getGameStatus(client.data.slug) !== GameStatus.PLACE_SHIPS) {
+            await this.server.to(user.socketId).emit("shipsIndexes", user.shipsIndexes);
+          }
       }
       await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
       return { gameStatus: await this.gameService.getGameStatus(client.data.slug) };
@@ -100,6 +102,23 @@ export class RoomWebsocketGateway
         await this.gameService.startBattle(client.data.slug);
         await this.server.to(client.data.slug).emit("gameStatus", await this.roomService.getGameStatus(client.data.slug));
       }
+    });
+  }
+
+  @SubscribeMessage('replay')
+  async replay(@ConnectedSocket() client: Socket): Promise<unknown> {
+    return this.handleAction(client.data.slug, async () => {
+      const users = await this.gameService.replay(client.data.slug);
+      await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
+      await this.server.to(client.data.slug).emit("gameStatus", await this.roomService.getGameStatus(client.data.slug));
+      for (const user of users) {
+        await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
+        await this.server.to(user.socketId).emit("battlePlace", user.battlePlace);
+        if (await this.gameService.getGameStatus(client.data.slug) !== GameStatus.PLACE_SHIPS) {
+          await this.server.to(user.socketId).emit("shipsIndexes", user.shipsIndexes);
+        }
+      }
+      return { gameStatus: await this.gameService.getGameStatus(client.data.slug) };
     });
   }
 

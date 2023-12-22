@@ -166,6 +166,20 @@ export class GameService {
     return room.users.find((element: UserWithShip) => element.userId != user.userId);
   }
 
+  async replay(slug: string): Promise<UserWithShip[]> {
+    const room: RoomModel = await this.roomService.getRoom(slug);
+    if (room.status != GameStatus.ENDED) throw new Error("La partie n'est pas terminée");
+    room.status = GameStatus.PLACE_SHIPS;
+    room.users.forEach((user: UserWithShip) => {
+      user.hasToPlay = true;
+      user.battlePlace = Array(10).fill(null).map(() => Array(10).fill('E'));
+      user.playerBoats = Array(10).fill(null).map(() => Array(10).fill('E'));
+      user.shipsIndexes = {};
+    });
+    await this.redisService.hset(`room:${slug}`, ['status', room.status, 'users', JSON.stringify(room.users)]);
+    return room.users;
+  }
+
   // TODO: add stats in future with HUB
   async addStats(slug: string, user: UserWithShip): Promise<[string, UserWithShip]> {
     return [slug, user];
