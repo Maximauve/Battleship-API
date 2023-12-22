@@ -153,6 +153,16 @@ export class GameService {
     return room.status;
   }
 
+  async getOpponentBoats(slug: string, user: UserWithShip): Promise<string[][]> {
+    const opponent: UserWithShip = await this.getOpponent(slug, user);
+    return opponent.playerBoats;
+  }
+
+  async getOpponent(slug: string, user: UserWithShip): Promise<UserWithShip> {
+    const room: RoomModel = await this.roomService.getRoom(slug);
+    return room.users.find((element: UserWithShip) => element.userId != user.userId);
+  }
+
   // TODO: add stats in future with HUB
   async addStats(slug: string, user: UserWithShip): Promise<[string, UserWithShip]> {
     return [slug, user];

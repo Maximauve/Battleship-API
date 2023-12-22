@@ -117,6 +117,10 @@ export class RoomWebsocketGateway
         await this.gameService.addStats(client.data.slug, client.data.user);
         await this.server.to(client.data.slug).emit("gameStatus", await this.roomService.getGameStatus(client.data.slug));
         await this.server.to(client.data.slug).emit("winner", user);
+        for (const user of users) {
+            await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
+            await this.server.to(user.socketId).emit("opponentBoats", await this.gameService.getOpponentBoats(client.data.slug, user));
+        }
       }
     });
   }
