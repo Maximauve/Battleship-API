@@ -68,6 +68,15 @@ export class RoomWebsocketGateway
             await this.server.to(user.socketId).emit("shipsIndexes", user.shipsIndexes);
           }
       }
+      if (await this.gameService.getGameStatus(client.data.slug) === GameStatus.ENDED) {
+        await this.server.to(client.data.slug).emit("winner", await this.gameService.getWinner(client.data.slug));
+        for (const user of users) {
+            await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
+            await this.server.to(user.socketId).emit("shipsIndexes", user.shipsIndexes);
+            await this.server.to(user.socketId).emit("opponentBoats", await this.gameService.getOpponentBoats(client.data.slug, user));
+            await this.server.to(user.socketId).emit("opponentShipsIndexes", await this.gameService.getOpponentShipsIndexes(client.data.slug, user));
+        }
+      }
       await this.server.to(client.data.slug).emit("members", await this.roomService.usersInRoom(client.data.slug));
       return { gameStatus: await this.gameService.getGameStatus(client.data.slug) };
     });
@@ -138,7 +147,9 @@ export class RoomWebsocketGateway
         await this.server.to(client.data.slug).emit("winner", user);
         for (const user of users) {
             await this.server.to(user.socketId).emit("playerBoats", user.playerBoats);
+            await this.server.to(user.socketId).emit("shipsIndexes", user.shipsIndexes);
             await this.server.to(user.socketId).emit("opponentBoats", await this.gameService.getOpponentBoats(client.data.slug, user));
+            await this.server.to(user.socketId).emit("opponentShipsIndexes", await this.gameService.getOpponentShipsIndexes(client.data.slug, user));
         }
       }
       return state;

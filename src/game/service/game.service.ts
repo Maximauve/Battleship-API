@@ -161,6 +161,11 @@ export class GameService {
     return opponent.playerBoats;
   }
 
+  async getOpponentShipsIndexes(slug: string, user: UserWithShip): Promise<{ [key: string]: { x: number, y: number }[] }> {
+    const opponent: UserWithShip = await this.getOpponent(slug, user);
+    return opponent.shipsIndexes;
+  }
+
   async getOpponent(slug: string, user: UserWithShip): Promise<UserWithShip> {
     const room: RoomModel = await this.roomService.getRoom(slug);
     return room.users.find((element: UserWithShip) => element.userId != user.userId);
@@ -178,6 +183,12 @@ export class GameService {
     });
     await this.redisService.hset(`room:${slug}`, ['status', room.status, 'users', JSON.stringify(room.users)]);
     return room.users;
+  }
+
+  async getWinner(slug: string): Promise<UserWithShip> {
+    const room: RoomModel = await this.roomService.getRoom(slug);
+    if (room.status != GameStatus.ENDED) throw new Error("La partie n'est pas terminée");
+    return room.users.find((user: UserWithShip) => this.checkWin(room, user))
   }
 
   // TODO: add stats in future with HUB
